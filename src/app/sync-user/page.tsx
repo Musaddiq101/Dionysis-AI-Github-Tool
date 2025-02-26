@@ -19,17 +19,18 @@ const SyncUser = async () => {
         where: {
             emailAddress: user.emailAddresses[0]?.emailAddress ?? ""
         },
+        update: {
+            imgUrl: user.imageUrl,
+            firstName: user.firstName,
+            lastName: user.lastName
+        },
         create: {
+            id: userId,
             imgUrl: user.imageUrl,
             emailAddress: user.emailAddresses[0]?.emailAddress ?? "",
             firstName: user.firstName,
             lastName: user.lastName
         },
-        update: {
-            imgUrl: user.imageUrl,
-            firstName: user.firstName,
-            lastName: user.lastName
-        }
     })
     return redirect("/dashboard")
 }
