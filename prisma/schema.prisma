@@ -33,6 +33,7 @@ model Project {
     
     deletedAt DateTime?
     userToProjects UserToProject[]
+    commits Commit[]
     
 }
 
@@ -48,4 +49,22 @@ model UserToProject {
     project Project @relation(fields: [projectId], references: [id])
 
     @@unique([userId, projectId])
+}
+
+
+model Commit {
+    id        String   @id @default(cuid())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    projectId String
+    project Project @relation(fields: [projectId], references: [id])
+
+    commitMessage String
+    commitHash String
+    commtAuthor String
+    commitAuthorAvatar String
+    commitDate DateTime
+    //ai summary
+    summary String
 }
