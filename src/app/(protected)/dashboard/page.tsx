@@ -4,6 +4,7 @@ import { useUser } from '@clerk/nextjs';
 import useProject from '@/hooks/use-project';
 import Link from 'next/link';
 import { ExternalLink, Github } from 'lucide-react';
+import CommitLog from './commit-log';
 
 const DashboardPage = () => {
     const { project } = useProject()
@@ -41,7 +42,7 @@ const DashboardPage = () => {
                     meeting card
                 </div>
                 <div className="mt-8">
-                    commit log
+                   <CommitLog/>
                 </div>
             </div>
         </div>
