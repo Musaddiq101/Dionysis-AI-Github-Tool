@@ -1,13 +1,28 @@
 import { VertexAI} from '@google-cloud/vertexai';
+import {Document} from '@langchain/core/documents'
+import { PredictionServiceClient, helpers, protos } from '@google-cloud/aiplatform';
+import { GoogleAuth } from 'google-auth-library';
+
 
 const vertexAi = new VertexAI({
-    project: process.env.GOOGLE_PROJECT_ID as string,
-    location: process.env.LOCATION_GOOGLE as string,
+    project:  process.env.GOOGLE_PROJECT_ID as string,
+    location: process.env.LOCATION_GOOGLE as string
 });
+
+const PROJECT_ID = process.env.GOOGLE_PROJECT_ID; // Your GCP Project ID
+const LOCATION = process.env.LOCATION_GOOGLE; // e.g., 'us-central1'
+const MODEL = 'text-embedding-004'; // Gemini Embedding Model
+const API_ENDPOINT = `${LOCATION}-aiplatform.googleapis.com`;
+
+
 
 const model = vertexAi.getGenerativeModel({
     model: 'gemini-1.5-flash',
 });
+
+const clientOptions = { apiEndpoint: API_ENDPOINT };
+const client = new PredictionServiceClient(clientOptions);
+const endpoint = `projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL}`;
 
 export const aiSummariseCommit = async (diff: string )=> {
     
@@ -62,6 +77,71 @@ export const aiSummariseCommit = async (diff: string )=> {
     }
 
 }
+
+export async function summarizeCode(doc: Document) {
+    console.log("Summarizing code:", doc.metadata.source);
+    const code = doc.pageContent.slice(0,10000); //limit to 10k characters
+    const prompt =  `You are an intelligent senior software engineer who specialises in onboarding junior software engineers onto projects.You are onboarding a junior software engineer and explaining to them the purpose of the ${doc.metadata.source} file
+    Here is the code:`;
+
+    const request = {
+        contents: [{
+            role: 'user',
+            parts: [
+                {text: prompt},
+                {text: `---\n${code}\n---\nGive a summary no more than 100 words of the code above`}
+            ]
+        }]
+    };
+
+    const response = await model.generateContent(request);
+    const text = response?.response?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (text) {
+        console.log(text);
+        return text;
+    } else {
+        console.error("Failed to generate summary");
+        return "Failed to generate summary";
+    }
+}
+
+export async function getEmbeddings(text: string): Promise<number[]> {
+    try {
+      // Use protobuf helpers to create IValue instances ✅
+      const instance=helpers.toValue({content: text});
+      const instances: protos.google.protobuf.IValue[] = [instance as protos.google.protobuf.IValue];
+
+      const parameters = helpers.toValue({});
+  
+      const request: protos.google.cloud.aiplatform.v1.IPredictRequest = {
+        endpoint,
+        instances,
+        parameters,
+      };
+  
+      const [response] = await client.predict(request);
+      const predictions = response?.predictions ?? [];
+  
+      if (predictions.length === 0) {
+        console.warn('No embeddings returned');
+        return [];
+      }
+  
+      // 🔥 This is the Vertex AI secret sauce for embedding extraction
+      const embeddings = predictions.map((p) => {
+        const embeddingProto = p?.structValue?.fields?.embeddings;
+        const valuesProto = embeddingProto?.structValue?.fields?.values;
+        return valuesProto?.listValue?.values?.map((v) => v.numberValue ?? 0) ?? [];
+      });
+  
+      return embeddings[0] ?? [];
+    } catch (error) {
+      console.error('Vertex AI Embedding Error:', error);
+      return [];
+    }
+  }
+
+
 
 
 

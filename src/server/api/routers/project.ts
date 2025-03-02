@@ -1,6 +1,7 @@
 import { pollCommits } from '@/lib/github';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 import { z } from 'zod';
+import { indexGithubRepo } from '@/lib/github-loader';
 
 
 export const projectRouter = createTRPCRouter({
@@ -23,6 +24,7 @@ export const projectRouter = createTRPCRouter({
                 }
             }
         })
+        await indexGithubRepo( project.id, input.githubUrl, input.githubToken)
         await pollCommits(project.id)
         return project
     }),
@@ -41,7 +43,7 @@ export const projectRouter = createTRPCRouter({
     getCommits: protectedProcedure.input(z.object({
         projectId: z.string()
     })).query(async ({ctx, input}) => {
-        pollCommits(input.projectId).then().catch(console.error)
+        pollCommits(input.projectId).then().catch(console.error) //everytime we check if new commit we summarise it 
         return await ctx.db.commit.findMany({where: {projectId: input.projectId}})
     })
 });
