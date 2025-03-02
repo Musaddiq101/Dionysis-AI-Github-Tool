@@ -40,22 +40,32 @@ export const indexGithubRepo = async ( projectId: string, githubUrl: string, git
             return
         }
         try {
-            const sourceCodeEmbedding = await db.sourceCodeEmbedding.create({
-                data: {
+            const sourceCodeEmbedding = await db.sourceCodeEmbedding.upsert({
+                where: {
+                    projectId_fileName: { // Use the unique constraint
+                        fileName: embedding.fileName,
+                        projectId: projectId,
+                    },
+                },
+                create: {
                     summary: embedding.summary,
                     sourceCode: embedding.sourceCode,
                     fileName: embedding.fileName,
-                    projectId,
+                    projectId: projectId,
+                },
+                update: {
+                    summary: embedding.summary,
+                    sourceCode: embedding.sourceCode,
                 },
             });
-            console.log("Inserted Base Record:", sourceCodeEmbedding);
+            
         
             await db.$executeRaw`
                 UPDATE "SourceCodeEmbedding"
                 SET "summaryEmbedding" = ${embedding.embedding}::vector
                 WHERE "id" = ${sourceCodeEmbedding.id}
             `;
-            console.log("Updated Embedding for ID:", sourceCodeEmbedding.id);
+            
         } catch (error) {
             console.error("Error inserting or updating embedding:", error);
         }
