@@ -59,7 +59,7 @@ export const indexGithubRepo = async ( projectId: string, githubUrl: string, git
                 },
             });
             
-        
+            console.log("inserting the ebedding vector")
             await db.$executeRaw`
                 UPDATE "SourceCodeEmbedding"
                 SET "summaryEmbedding" = ${embedding.embedding}::vector
