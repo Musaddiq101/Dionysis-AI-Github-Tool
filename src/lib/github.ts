@@ -51,14 +51,18 @@ export const getCommitHashes = async (
 
 export const pollCommits = async (projectId: string) => {
     const { project, githubUrl } = await fetchProjectGitHubUrl(projectId);
-    const commitHases = await getCommitHashes(project?.githubUrl ?? "");
-    const unprocessedCommits = await filterUnprocessedCommits(projectId, commitHases);
+    const commitHashes = await getCommitHashes(project?.githubUrl ?? "");
+    const unprocessedCommits = await filterUnprocessedCommits(projectId, commitHashes);
     const summariesResponse = await Promise.allSettled(
         unprocessedCommits.map((hash) => {
-            return summariseCommit(githubUrl, hash.commitHash);
+            console.log("Summarising commit", hash.commitHash);
+            const sum =  summariseCommit(githubUrl, hash.commitHash);
+            console.log("Summar: ", sum)
+            return sum;
         }),
     );
     const summaries = summariesResponse.map((summary) => {
+        console.log(summary);
         if (summary.status === "fulfilled") {
             return summary.value as string;
         }
@@ -67,7 +71,7 @@ export const pollCommits = async (projectId: string) => {
         data: summaries.map((summary, idx) => ({
             projectId: projectId,
             commitHash: unprocessedCommits[idx]!.commitHash,
-            summary: summary!,
+            summary: summary ?? "No summary generated",
             commitAuthorName: unprocessedCommits[idx]!.commitAuthorName,
             commitDate: unprocessedCommits[idx]!.commitDate,
             commitMessage: unprocessedCommits[idx]!.commitMessage,
@@ -94,20 +98,21 @@ async function summariseCommit(githubUrl: string, commitHash: string) {
         `${githubUrl}/commit/${commitHash}.diff`,
         {
             headers: {
-                Accept: "application/vnd.github.v3.diff",
+                Accept: "application/vnd.github.v3.diff", 
+                Authorization: `Bearer ${process.env.GITHUB_TOKEN}`
             },
         }
     );
     return await aiSummariseCommit(data) || ""
 }
 
-async function filterUnprocessedCommits(projectId: string, commitHases: response[]) {
+async function filterUnprocessedCommits(projectId: string, commitHashes: response[]) {
     const processedCommits = await db.commit.findMany({
         where: {
             projectId: projectId,
         },
     });
-    const unprocessedCommits = commitHases.filter(
+    const unprocessedCommits = commitHashes.filter(
         (hash) => !processedCommits.some((commit) => commit.commitHash === hash.commitHash)
     );
     return unprocessedCommits;

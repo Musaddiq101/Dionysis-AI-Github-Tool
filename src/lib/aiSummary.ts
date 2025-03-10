@@ -2,7 +2,10 @@ import { VertexAI} from '@google-cloud/vertexai';
 import {Document} from '@langchain/core/documents'
 import { PredictionServiceClient, helpers, protos } from '@google-cloud/aiplatform';
 import { GoogleAuth } from 'google-auth-library';
+import pLimit from 'p-limit';
 
+
+const limit = pLimit(1);
 
 const vertexAi = new VertexAI({
     project:  process.env.GOOGLE_PROJECT_ID as string,
@@ -14,7 +17,7 @@ const LOCATION = process.env.LOCATION_GOOGLE; // e.g., 'us-central1'
 const MODEL = 'text-embedding-004'; // Gemini Embedding Model
 const API_ENDPOINT = `${LOCATION}-aiplatform.googleapis.com`;
 
-
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const model = vertexAi.getGenerativeModel({
     model: 'gemini-1.5-flash',
@@ -24,8 +27,20 @@ const clientOptions = { apiEndpoint: API_ENDPOINT };
 const client = new PredictionServiceClient(clientOptions);
 const endpoint = `projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL}`;
 
+const withRetry = async <T>(fn: () => Promise<T>, retries = 3, delayMs = 8000): Promise<T> => {
+    try {
+      return await fn();
+    } catch (error) {
+      if (retries === 0) throw error;
+      console.log(`Retrying after ${delayMs}ms...`);
+      await delay(delayMs);
+      return withRetry(fn, retries - 1, delayMs * 2); // Double the delay each time
+    }
+  };
+
+
 export const aiSummariseCommit = async (diff: string )=> {
-    
+    return withRetry(async () => {
     const prompt = `You are an expert programmer, and you are trying to summarize a git diff.
     Reminders about the git diff format:
     For every file, there are a few metadata lines, like (for example):
@@ -71,14 +86,18 @@ export const aiSummariseCommit = async (diff: string )=> {
     if (text) {
         console.log(text);
         return text;
+
     } else {
         console.error("Failed to generate summary");
         return "Failed to generate summary";
     }
+    });
+    
 
 }
 
 export async function summarizeCode(doc: Document) {
+    return withRetry(async () => {
     console.log("Summarizing code:", doc.metadata.source);
     const code = doc.pageContent.slice(0,10000); //limit to 10k characters
     const prompt =  `You are an intelligent senior software engineer who specialises in onboarding junior software engineers onto projects.You are onboarding a junior software engineer and explaining to them the purpose of the ${doc.metadata.source} file
@@ -103,6 +122,7 @@ export async function summarizeCode(doc: Document) {
         console.error("Failed to generate summary");
         return "Failed to generate summary";
     }
+    });
 }
 
 export async function getEmbeddings(text: string): Promise<number[]> {

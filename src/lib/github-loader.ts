@@ -1,99 +1,113 @@
-import {GithubRepoLoader } from '@langchain/community/document_loaders/web/github'
-import {Document} from '@langchain/core/documents'
-import { summarizeCode, getEmbeddings } from './aiSummary'
-import {db} from '@/server/db'
+import { GithubRepoLoader } from "@langchain/community/document_loaders/web/github";
+import { Document } from "@langchain/core/documents";
+import { summarizeCode, getEmbeddings } from "./aiSummary";
+import { db } from "@/server/db";
 
-export const loadGithubRepo = async (githubUrl: string, githubToken?: string) => {
-console.log('loading github repo', githubUrl)
-try {
+const token = process.env.GITHUB_TOKEN;
+
+export const loadGithubRepo = async ( 
+  githubUrl: string,
+  githubToken?: string,
+) => {
+  console.log("loading github repo", githubUrl);
+  try {
     const loader = new GithubRepoLoader(githubUrl, {
-        accessToken: githubToken || "",
-        branch: "main",
-        ignoreFiles: ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'bun.lockb'],
-        recursive: true,
-        unknown: 'warn',
-        maxConcurrency: 5
-    })
-    console.log('loading docs')
-    const docs = await loader.load()
-    console.log('docs loaded', docs)
-    return docs
-    } catch (error) {
-        console.error("Error loading github repo", error)
-    }
+      accessToken: githubToken || token ,
+      branch: "main",
+      ignorePaths: [
+        'package-lock.json',
+        'yarn.lock',
+        'pnpm-lock.yaml',
+        'bun.lockb',
+        '**/node_modules/**',
+        'package.json',
+        
+      ],
+      recursive: true,
+      unknown: "warn",
+      maxConcurrency: 5,
+    });
+    console.log("loading docs");
+    const docs = await loader.load();
+    console.log("docs loaded", docs);
+    return docs;
+  } catch (error) {
+    console.error("Error loading github repo", error);
+  }
+};
 
-}
-
-
-export const indexGithubRepo = async ( projectId: string, githubUrl: string, githubToken?: string) => {
-    const docs = await loadGithubRepo(githubUrl, githubToken)
-    // index the documents
-    if (!docs) {
-        console.error("No documents loaded from the GitHub repository");
+export const indexGithubRepo = async (
+  projectId: string,
+  githubUrl: string,
+  githubToken?: string,
+) => {
+  const docs = await loadGithubRepo(githubUrl, githubToken);
+  // index the documents
+  if (!docs) {
+    console.error("No documents loaded from the GitHub repository");
+    return;
+  }
+  const allEmbeddings = await generateEmbeddings(docs);
+  await Promise.allSettled(
+    allEmbeddings.map(async (embedding, index) => {
+      console.log(`processing ${index} of ${allEmbeddings.length}`);
+      if (!embedding) {
+        console.error("embedding is null");
         return;
-    }
-    const allEmbeddings = await generateEmbeddings(docs)
-    await Promise.allSettled(allEmbeddings.map(async (embedding, index) => {
-        console.log(`processing ${index} of ${allEmbeddings.length}`)
-        if (!embedding) {
-            console.error("embedding is null")
-            return
-        }
-        try {
-            const sourceCodeEmbedding = await db.sourceCodeEmbedding.upsert({
-                where: {
-                    projectId_fileName: { // Use the unique constraint
-                        fileName: embedding.fileName,
-                        projectId: projectId,
-                    },
-                },
-                create: {
-                    summary: embedding.summary,
-                    sourceCode: embedding.sourceCode,
-                    fileName: embedding.fileName,
-                    projectId: projectId,
-                },
-                update: {
-                    summary: embedding.summary,
-                    sourceCode: embedding.sourceCode,
-                },
-            });
-            
-            console.log("inserting the ebedding vector")
-            await db.$executeRaw`
+      }
+      try {
+        const sourceCodeEmbedding = await db.sourceCodeEmbedding.upsert({
+          where: {
+            projectId_fileName: {
+              // Use the unique constraint
+              fileName: embedding.fileName,
+              projectId: projectId,
+            },
+          },
+          create: {
+            summary: embedding.summary,
+            sourceCode: embedding.sourceCode,
+            fileName: embedding.fileName,
+            projectId: projectId,
+          },
+          update: {
+            summary: embedding.summary,
+            sourceCode: embedding.sourceCode,
+          },
+        });
+
+        console.log("inserting the ebedding vector");
+        await db.$executeRaw`
                 UPDATE "SourceCodeEmbedding"
                 SET "summaryEmbedding" = ${embedding.embedding}::vector
                 WHERE "id" = ${sourceCodeEmbedding.id}
             `;
-            
-        } catch (error) {
-            console.error("Error inserting or updating embedding:", error);
-        }
+      } catch (error) {
+        console.error("Error inserting or updating embedding:", error);
+      }
+    }),
+  );
+};
 
-    }))
-}
+const cleanString = (str: string) => str.replace(/\x00/g, "");
+
 
 const generateEmbeddings = async (docs: Document[]) => {
-    //look through files and get AI summary and then create embedding vectoe of the summary
+  //look through files and get AI summary and then create embedding vectoe of the summary
 
-    return await Promise.all(docs.map(async (doc) =>{
-        const summary = await summarizeCode(doc)
-        const embedding = await getEmbeddings(summary)
-        return {
-            summary, 
-            embedding,
-            sourceCode: JSON.parse(JSON.stringify(doc.pageContent)),
-            fileName: doc.metadata.source 
-        }
-    }))
-
-}
-
-
-
-
-
-
+  return await Promise.all(
+    docs.map(async (doc) => {
+      const summary = await summarizeCode(doc);
+      const embedding = await getEmbeddings(summary);
+      return {
+        summary: cleanString(summary),
+        embedding,
+        sourceCode: cleanString(doc.pageContent),
+        fileName: cleanString(doc.metadata.source),
+      };
+    }),
+  );
+};
 
 // loader retuurns an array of document objects
 // Document {
