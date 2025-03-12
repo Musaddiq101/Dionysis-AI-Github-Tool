@@ -1,7 +1,7 @@
 'use client'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { dracula } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { lucario } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import React from 'react'
 
 type Props = {
@@ -47,7 +47,7 @@ const CodeReferences = ({ filesReferences }: Props) => {
                 </div>
                 {filesReferences.map((file) => (
                     <TabsContent key={file.fileName} value={file.fileName} className="max-h-[40vh] overflow-scroll max-w-7xl rounded-md">
-                        <SyntaxHighlighter language="typescript" style={dracula}>
+                        <SyntaxHighlighter language="typescript" style={lucario}>
                         {unescapeCode(file.sourceCode)}
                         </SyntaxHighlighter>
                     </TabsContent>

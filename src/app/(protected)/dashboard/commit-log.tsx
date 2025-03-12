@@ -29,7 +29,7 @@ const CommitLog = () => {
                         <img
                             src={commit.commitAuthorAvatar}
                             alt=""
-                            className="relative mt-3 h-8 w-8 flex-none rounded-full bg-gray-50"
+                            className="relative mt h-9 w-9 flex-none rounded-full bg-gray-50"
                         />
                         <div className="flex-auto rounded-md bg-white p-3 ring-1 ring-inset ring-gray-200">
                             <div className="flex justify-between gap-x-4">

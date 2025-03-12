@@ -45,5 +45,37 @@ export const projectRouter = createTRPCRouter({
     })).query(async ({ctx, input}) => {
         pollCommits(input.projectId).then().catch(console.error) //everytime we check if new commit we summarise it 
         return await ctx.db.commit.findMany({where: {projectId: input.projectId}})
-    })
+    }),
+    saveAnswer: protectedProcedure.input(z.object({
+        projectId: z.string(),
+        question: z.string(),
+        answer: z.string(),
+        filesReferences: z.any(),
+    })).mutation(async ({ctx, input}) => {
+        return await ctx.db.question.create({
+            data: {
+                answer: input.answer,
+                question: input.question,
+                projectId: input.projectId,
+                filesReferences: input.filesReferences,
+                userId: ctx.user.userId!
+
+            }
+        })
+    }),
+    getQuestions: protectedProcedure.input(z.object({
+        projectId: z.string()
+    })).query(async ({ctx, input}) => {
+        return await ctx.db.question.findMany({
+            where: {
+                projectId: input.projectId
+            },
+            include: {
+                user: true,
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        })
+    }),
 });
