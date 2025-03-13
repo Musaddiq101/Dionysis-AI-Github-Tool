@@ -26,6 +26,7 @@ export async function askQuestion(question: string, projectId: string) {
     console.log('Creating query for getting similarity');
 
     // Step 2: Query the database for similar files
+    
     const result = await db.$queryRaw`
       SELECT "fileName", "sourceCode", "summary",
       1 - ("summaryEmbedding" <=> ${vectorQuery}::vector) AS similarity
@@ -35,6 +36,7 @@ export async function askQuestion(question: string, projectId: string) {
       ORDER BY similarity DESC
       LIMIT 10
     ` as { fileName: string; sourceCode: string; summary: string }[];
+   
 
     console.log(`Found ${result.length} matching documents`);
 

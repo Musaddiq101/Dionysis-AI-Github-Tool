@@ -2,6 +2,9 @@ import { VertexAI} from '@google-cloud/vertexai';
 import {Document} from '@langchain/core/documents'
 import { PredictionServiceClient, helpers, protos } from '@google-cloud/aiplatform';
 import { GoogleAuth } from 'google-auth-library';
+import fs from 'fs';
+import path from 'path';
+
 import pLimit from 'p-limit';
 
 
@@ -9,8 +12,17 @@ const limit = pLimit(1);
 
 const vertexAi = new VertexAI({
     project:  process.env.GOOGLE_PROJECT_ID as string,
-    location: process.env.LOCATION_GOOGLE as string
+    location: process.env.LOCATION_GOOGLE as string,
+    
 });
+
+
+const credentialsPath = path.resolve(process.env.GOOGLE_APPLICATION_CREDENTIALS as string);
+console.log('Resolved Credentials Path:', credentialsPath);
+
+if (!fs.existsSync(credentialsPath)) {
+  throw new Error(`Credentials file not found at: ${credentialsPath}`);
+}
 
 const PROJECT_ID = process.env.GOOGLE_PROJECT_ID; // Your GCP Project ID
 const LOCATION = process.env.LOCATION_GOOGLE; // e.g., 'us-central1'
