@@ -2,8 +2,57 @@ import { GithubRepoLoader } from "@langchain/community/document_loaders/web/gith
 import { Document } from "@langchain/core/documents";
 import { summarizeCode, getEmbeddings } from "./aiSummary";
 import { db } from "@/server/db";
+import { Octokit } from "octokit";
 
 const token = process.env.GITHUB_TOKEN;
+
+
+const getFileCount = async (path: string, octokit: Octokit, owner: string, repo: string, acc: number = 0) => {
+    const { data } = await octokit.rest.repos.getContent({
+        owner,
+        repo,
+        path
+    })
+    if (!Array.isArray(data) && data.type === "file") {
+        return acc + 1
+    }
+
+    if (Array.isArray(data)) {
+      let fileCount = 0;
+      const directiories: string[] = [];
+      for (const item of data) {
+        if (item.type === "file") {
+          fileCount += 1;
+        } else {
+          directiories.push(item.path);
+        }
+      }
+
+      if (directiories.length > 0) {
+        const diectoryrCounts = await Promise.all(
+          directiories.map(dir => getFileCount(dir, octokit, owner, repo, 0),
+          ),
+        );
+        fileCount += diectoryrCounts.reduce((acc, count) => acc + count, 0);
+      }
+      return acc + fileCount;
+    }
+    return acc;
+
+}
+
+export const checkCredits = async(githubUrl: string, githubToken?: string) => {
+    //fidn out how many total files in repoo
+    const octokit = new Octokit({auth: githubToken || token});
+    const owner = githubUrl.split("/")[3];
+    const repo = githubUrl.split("/")[4];
+    if (!owner || !repo) {
+        return 0
+    }
+    const fileCount = await getFileCount("", octokit, owner, repo);
+    return fileCount;
+    
+}
 
 export const loadGithubRepo = async ( 
   githubUrl: string,
