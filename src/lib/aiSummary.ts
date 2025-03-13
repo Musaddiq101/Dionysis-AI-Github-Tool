@@ -17,13 +17,6 @@ const vertexAi = new VertexAI({
 });
 
 
-const credentialsPath = path.resolve(process.env.GOOGLE_APPLICATION_CREDENTIALS as string);
-console.log('Resolved Credentials Path:', credentialsPath);
-
-if (!fs.existsSync(credentialsPath)) {
-  throw new Error(`Credentials file not found at: ${credentialsPath}`);
-}
-
 const PROJECT_ID = process.env.GOOGLE_PROJECT_ID; // Your GCP Project ID
 const LOCATION = process.env.LOCATION_GOOGLE; // e.g., 'us-central1'
 const MODEL = 'text-embedding-004'; // Gemini Embedding Model
