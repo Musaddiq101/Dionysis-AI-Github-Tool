@@ -10,9 +10,12 @@ import pLimit from 'p-limit';
 
 const limit = pLimit(1);
 
+
+
 const vertexAi = new VertexAI({
     project:  process.env.GOOGLE_PROJECT_ID as string,
     location: process.env.LOCATION_GOOGLE as string,
+    
     
 });
 
