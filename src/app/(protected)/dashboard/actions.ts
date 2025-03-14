@@ -13,7 +13,7 @@ export const getGCPCredentials = () => {
     return {
       credentials: {
         client_email: process.env.GCP_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GCP_PRIVATE_KEY.replace(/\\n/g, '\n') // Fix newline characters
+        private_key: process.env.GCP_PRIVATE_KEY // Fix newline characters
       },
       projectId: process.env.GCP_PROJECT_ID,
     };
