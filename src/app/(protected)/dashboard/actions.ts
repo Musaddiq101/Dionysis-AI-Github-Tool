@@ -5,10 +5,19 @@ import { getEmbeddings } from '@/lib/aiSummary';
 import { db } from '@/server/db';
 import { PredictionServiceClient,  helpers, protos } from '@google-cloud/aiplatform';
 import { VertexAI} from '@google-cloud/vertexai';
+import { GoogleAuth } from 'google-auth-library';
 
 const vertexAi = new VertexAI({
     project:  process.env.GOOGLE_PROJECT_ID as string,
     location: process.env.LOCATION_GOOGLE as string
+});
+
+const authClient = new GoogleAuth({
+  credentials: {
+    client_email: process.env.GOOGLE_CLIENT_EMAIL,
+    private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'), // Fix newline formatting
+  },
+  scopes: ['https://www.googleapis.com/auth/cloud-platform'],
 });
 
 const model = vertexAi.getGenerativeModel({

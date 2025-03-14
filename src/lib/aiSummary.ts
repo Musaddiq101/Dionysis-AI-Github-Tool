@@ -10,11 +10,28 @@ import pLimit from 'p-limit';
 
 const limit = pLimit(1);
 
+export const getGCPCredentials = () => {
+  // For Vercel, use environment variables
+  if (process.env.GCP_PRIVATE_KEY) {
+    return {
+      credentials: {
+        client_email: process.env.GCP_SERVICE_ACCOUNT_EMAIL,
+        private_key: process.env.GCP_PRIVATE_KEY // Fix newline characters
+      },
+      projectId: process.env.GCP_PROJECT_ID,
+    };
+  }
+  // For local development, use gcloud CLI or default credentials
+  return {};
+};
+
 const vertexAi = new VertexAI({
     project:  process.env.GOOGLE_PROJECT_ID as string,
     location: process.env.LOCATION_GOOGLE as string,
-    
+    googleAuthOptions: getGCPCredentials()
 });
+
+
 
 
 
