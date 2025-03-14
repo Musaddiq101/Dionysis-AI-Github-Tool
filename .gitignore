@@ -44,4 +44,4 @@ yarn-error.log*
 
 # idea files
 .idea
-./src/composed-augury-452316-e6-67f8b0a98d62.json
+src/composed-augury-452316-e6-67f8b0a98d62.json
