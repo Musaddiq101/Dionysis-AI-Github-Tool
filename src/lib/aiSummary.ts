@@ -46,7 +46,9 @@ const model = vertexAi.getGenerativeModel({
     model: 'gemini-1.5-flash',
 });
 
-const clientOptions = { apiEndpoint: API_ENDPOINT };
+const clientOptions = { apiEndpoint: API_ENDPOINT,
+  credentials: getGCPCredentials().credentials,
+ };
 const client = new PredictionServiceClient(clientOptions);
 const endpoint = `projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL}`;
 
