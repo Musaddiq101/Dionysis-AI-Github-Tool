@@ -7,7 +7,7 @@ import { PredictionServiceClient,  helpers, protos } from '@google-cloud/aiplatf
 import { VertexAI} from '@google-cloud/vertexai';
 import { GoogleAuth } from 'google-auth-library';
 
-export const getGCPCredentials = () => {
+export const getGCPCredentials = async () => {
   // For Vercel, use environment variables
   if (process.env.GCP_PRIVATE_KEY) {
     return {
@@ -25,7 +25,7 @@ export const getGCPCredentials = () => {
 const vertexAi = new VertexAI({
     project:  process.env.GOOGLE_PROJECT_ID as string,
     location: process.env.LOCATION_GOOGLE as string,
-    googleAuthOptions: getGCPCredentials()
+    googleAuthOptions: await getGCPCredentials()
 });
 
 
