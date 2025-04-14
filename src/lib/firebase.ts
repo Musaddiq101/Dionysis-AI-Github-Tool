@@ -6,11 +6,12 @@ import {getDownloadURL, getStorage, ref, uploadBytesResumable} from "firebase/st
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-    authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.PROJECT_ID,
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.SENDER_ID,
-    appId: process.env.FIREBASE_APP_ID
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: "dionysis-52633.firebaseapp.com",
+  projectId: "dionysis-52633",
+  storageBucket: "dionysis-52633.firebasestorage.app",
+  messagingSenderId: "1088209304203",
+  appId: "1:1088209304203:web:69ecf17ff985c241aa328e"
 };
 
 // Initialize Firebase
