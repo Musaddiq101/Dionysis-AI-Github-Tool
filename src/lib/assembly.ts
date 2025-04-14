@@ -9,6 +9,8 @@ function msToTime(ms: number) {
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
 }
 
+
+
 export const processMeeting = async (meetingUrl: string) => {
     const transcript = await client.transcripts.transcribe({
         audio: meetingUrl,
