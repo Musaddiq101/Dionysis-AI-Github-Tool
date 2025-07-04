@@ -70,7 +70,7 @@
     "@uiw/react-md-editor": "^4.0.5",
     "ai": "^4.1.54",
     "assemblyai": "^4.9.0",
-    "axios": "^1.8.1",
+    "axios": "^1.10.0",
     "class-variance-authority": "^0.7.1",
     "classnames": "^2.5.1",
     "clsx": "^2.1.1",
