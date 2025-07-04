@@ -87,7 +87,7 @@
     "octokit": "^4.1.2",
     "p-limit": "^6.2.0",
     "pgvector": "^0.2.0",
-    "prismjs": "^1.29.0",
+    "prismjs": "^1.30.0",
     "punycode": "^2.3.1",
     "react": "^18.3.1",
     "react-circular-progressbar": "^2.2.0",
